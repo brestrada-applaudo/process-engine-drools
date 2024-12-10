@@ -1,0 +1,24 @@
+import com.example.pr.model.ExportableRule;
+import com.example.pr.model.Form;
+
+rule "Validar nombre y cantidad en paso 1"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campos cantidad y nombre no cumplen con el criterio)
+when
+    $formulario: Form( quantity > 100, name == null )
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+rule "Acción 'next' en paso 2"
+    @info(No se puede ejecutar la acción 'next' si hay errores en el formulario.)
+    @type(visual)
+    @message(Acción no cumple el criterio)
+when
+    $formulario: Form( actionForm == 'next' && status == 'draft' )
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
