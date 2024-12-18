@@ -1,0 +1,156 @@
+import com.example.pr.model.ExportableRule;
+import com.example.pr.model.Form;
+import com.fasterxml.jackson.databind.JsonNode;
+
+declare Person
+    firstName: String
+    lastName: String
+    age: Integer
+    validationStep: String
+end
+
+// Validate Firs Name
+rule "Validate firsName from JSON in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo firstName es obligatorio)
+    @procedure(T14)
+salience 100
+when
+    $jsonNode: JsonNode(!has("firstName"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Validate Last Name
+rule "Validate lastName from JSON in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo lastName es obligatorio)
+    @procedure(T14)
+salience 99
+when
+    $jsonNode: JsonNode(!has("lastName"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Validate Age
+rule "Validate age from JSON in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo age es obligatorio)
+    @procedure(T14)
+salience 98
+when
+    $jsonNode: JsonNode(!has("age"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Initial rule to create Person from JSON
+rule "Create Person from JSON in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Persona Creada con exito)
+    @procedure(T14)
+salience 97
+when
+    $jsonNode: JsonNode(has("firstName") && has("lastName") && has("age"))
+    not Person() // Ensure no Person exists yet
+then
+    Person person = new Person();
+    person.setFirstName($jsonNode.get("firstName").asText());
+    person.setLastName($jsonNode.get("lastName").asText());
+    person.setAge($jsonNode.get("age").asInt());
+    person.setValidationStep("INIT");
+
+    insert(person);
+    System.out.println("Person created from JSON In T14 - Salience");
+end
+
+// Validate firstName field
+rule "Validate FirstName Fields in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo firstName no cumplen con el criterio)
+    @procedure(T14)
+salience 90
+when
+    $person: Person(
+        firstName == null || firstName.isEmpty()
+    )
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Validate firstName field
+rule "Validate LastName Field in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo lastName no cumplen con el criterio)
+    @procedure(T14)
+salience 89
+when
+    $person: Person(
+        lastName == null || lastName.isEmpty()
+    )
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+rule "Validate Name Format in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campos firstName or LastName no cumplen con el criterio de mascara)
+    @procedure(T14)
+salience 85
+when
+    $person: Person(
+        firstName not matches "[A-Za-z]+",
+        lastName not matches "[A-Za-z]+"
+    )
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Validate age
+rule "Validate Age in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo Age no cumple con el criterio)
+    @procedure(T14)
+salience 80
+when
+    $person: Person(
+        age < 0 || age > 100
+    )
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Final processing
+rule "Process Validated Person in T14 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Validation Success)
+    @procedure(T14)
+salience 70
+when
+    $person: Person()
+then
+    System.out.println("Person fully validated T14: " +
+        $person.getFirstName() + " " +
+        $person.getLastName() + ", age: " +
+        $person.getAge());
+end

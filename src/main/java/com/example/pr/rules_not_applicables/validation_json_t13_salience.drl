@@ -1,0 +1,142 @@
+import com.example.pr.model.ExportableRule;
+import com.example.pr.model.Form;
+import com.fasterxml.jackson.databind.JsonNode;
+
+declare Person
+    firstName: String
+    lastName: String
+    age: Integer
+    validationStep: String
+end
+
+// Validate Firs Name
+rule "Validate firsName from JSON in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campos firstName no cumplen con el criterio)
+salience 100
+when
+    $jsonNode: JsonNode(!has("firstName"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Validate Last Name
+rule "Validate lastName from JSON in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campos lastName no cumplen con el criterio)
+salience 99
+when
+    $jsonNode: JsonNode(!has("lastName"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Validate Age
+rule "Validate age from JSON in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campos age no cumplen con el criterio)
+salience 98
+when
+    $jsonNode: JsonNode(!has("age"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Initial rule to create Person from JSON
+rule "Create Person from JSON in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Persona Creada con exito)
+salience 97
+when
+    $jsonNode: JsonNode(has("firstName") && has("lastName") && has("age"))
+    not Person() // Ensure no Person exists yet
+then
+    Person person = new Person();
+    person.setFirstName($jsonNode.get("firstName").asText());
+    person.setLastName($jsonNode.get("lastName").asText());
+    person.setAge($jsonNode.get("age").asInt());
+    person.setValidationStep("INIT");
+
+    insert(person);
+    System.out.println("Person created from JSON In T13 - Salience");
+end
+
+// Validate name fields
+rule "Validate Name Fields in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campos firstName or LastName no cumplen con el criterio)
+salience 90
+when
+    $person: Person(
+        firstName != null && firstName.length() > 0,
+        lastName != null && lastName.length() > 0,
+        validationStep == "INIT"
+    )
+then
+    modify($person) {
+        setValidationStep("NAME_VALIDATED")
+    }
+    System.out.println("Name validation passed In T13");
+end
+
+rule "Validate Name Format in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campos firstName or LastName no cumplen con el criterio)
+salience 85
+when
+    $person: Person(
+        firstName matches "[A-Za-z]+",
+        lastName matches "[A-Za-z]+",
+        validationStep == "NAME_VALIDATED"
+    )
+then
+    modify($person) {
+        setValidationStep("NAME_FORMAT_VALIDATED")
+    }
+    System.out.println("Name format validation passed In T13");
+end
+
+// Validate age
+rule "Validate Age in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo Age no cumple con el criterio)
+salience 80
+when
+    $person: Person(
+        age > 0 && age < 100,
+        validationStep == "NAME_FORMAT_VALIDATED"
+    )
+then
+    modify($person) {
+        setValidationStep("FULLY_VALIDATED")
+    }
+    System.out.println("Age validation passed In T13");
+end
+
+// Final processing
+rule "Process Validated Person in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Validation Success)
+salience 70
+when
+    $person: Person(validationStep == "FULLY_VALIDATED")
+then
+    System.out.println("Person fully validated T13: " +
+        $person.getFirstName() + " " +
+        $person.getLastName() + ", age: " +
+        $person.getAge());
+end

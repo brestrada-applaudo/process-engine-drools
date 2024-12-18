@@ -1,0 +1,119 @@
+import com.example.pr.model.ExportableRule;
+import com.example.pr.model.Form;
+import com.fasterxml.jackson.databind.JsonNode;
+
+declare Person
+    firstName: String
+    lastName: String
+    age: Integer
+    validationStep: String
+end
+
+// Validate Firs Name
+rule "Validate firsName from JSON in T13 Using Agenda"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo firstName es obligatorio)
+agenda-group "required"
+when
+    $jsonNode: JsonNode(!has("firstName"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Validate Last Name
+rule "Validate lastName from JSON in T13 Using Agenda"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo lastName es obligatorio)
+agenda-group "required"
+when
+    $jsonNode: JsonNode(!has("lastName"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Validate Age
+rule "Validate age from JSON in T13 Using Agenda"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Campo age es obligatorio)
+agenda-group "required"
+when
+    $jsonNode: JsonNode(!has("age"))
+    not Person() // Ensure no Person exists yet
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+// Initial rule to create Person from JSON
+rule "Create Person from JSON in T13 Using Agenda"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(internal)
+    @message(Persona Creada con exito)
+agenda-group "required"
+when
+    $jsonNode: JsonNode(has("firstName") && has("lastName") && has("age"))
+    not Person() // Ensure no Person exists yet
+then
+    Person person = new Person();
+    person.setFirstName($jsonNode.get("firstName").asText());
+    person.setLastName($jsonNode.get("lastName").asText());
+    person.setAge($jsonNode.get("age").asInt());
+    person.setValidationStep("INIT");
+
+    insert(person);
+    drools.setFocus("validation");
+
+    System.out.println("Person created from JSON In T13 - Agenda");
+end
+
+rule "Validate Person Data In T13"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Validando datos de la persona)
+agenda-group "validation"
+when
+    $person: Person(validationStep == "INIT")
+then
+    // Perform validation
+    boolean isValid = true;
+    String reason = "";
+    if ($person.getFirstName() == null || $person.getFirstName().isEmpty()) {
+        isValid = false;
+        reason = reason + " Invalid firstName";
+    }
+
+    if ($person.getLastName() == null || $person.getLastName().isEmpty()) {
+        isValid = false;
+        reason = reason + " Invalid lastName";
+    }
+
+    if (isValid) {
+        modify($person) {
+            setValidationStep("VALIDATED")
+        }
+        drools.setFocus("processing");
+    } else {
+      throw new RuntimeException(reason);
+    }
+end
+
+rule "Process Valid Person In T13"
+    @info(Esta regla se implementa dentro del trámite X para validar...)
+    @type(logic)
+    @message(Validando datos de la persona)
+agenda-group "processing"
+when
+    $person: Person(validationStep == "VALIDATED")
+then
+        System.out.println("Person fully validated T13: " +
+            $person.getFirstName() + " " +
+            $person.getLastName() + ", age: " +
+            $person.getAge());
+end

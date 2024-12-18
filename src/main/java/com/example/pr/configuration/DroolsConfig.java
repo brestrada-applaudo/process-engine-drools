@@ -11,7 +11,7 @@ public class DroolsConfig {
     public KieServices kieServices() {
         KieServices kieServices = KieServices.Factory.get();
         if (kieServices == null) {
-            throw new IllegalStateException("KieServices pudo ser iniciado");
+            throw new IllegalStateException("KieServices no pudo ser iniciado");
         }
         return kieServices;
     }

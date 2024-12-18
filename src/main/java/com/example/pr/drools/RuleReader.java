@@ -19,6 +19,7 @@ public class RuleReader {
         try {
             KieServices kieServices = KieServices.Factory.get();
 
+
             KieFileSystem kfs = kieServices.newKieFileSystem();
             kfs.write("src/main/resources/" + drlFilePath, kieServices.getResources().newClassPathResource(drlFilePath));
 
