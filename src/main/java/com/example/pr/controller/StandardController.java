@@ -43,7 +43,6 @@ public class StandardController {
 
     @GetMapping("/flow/{flowId}/step/{stepId}/action")
     public String executeAction(@PathVariable int flowId, @PathVariable int stepId) {
-        // Mala práctica, just for test
         Form fakeForm = new Form();
         fakeForm.setQuantity(50);
         ruleEngineService.executeRules("flow-rules", fakeForm); // Forma 2 de lectura del .drl usando el kmodule.xml
@@ -54,7 +53,6 @@ public class StandardController {
     @GetMapping("/flow/{flowId}/step/{stepId}/action/json")
     public String executeActionJson(@PathVariable int flowId, @PathVariable int stepId)
       throws JsonProcessingException {
-        // Mala práctica, just for test
         String jsonString = """
               {
                   "firstName": "Felipe",
@@ -74,7 +72,6 @@ public class StandardController {
     @GetMapping("/flow/{flowId}/step/{stepId}/action/filter")
     public String executeActionJsonWithFilter(@PathVariable int flowId, @PathVariable int stepId)
       throws JsonProcessingException {
-        // Mala práctica, just for test
         String jsonString = """
               {
                   "firstName": "Felipe",
@@ -92,7 +89,6 @@ public class StandardController {
 
 
     @GetMapping(value="/file_download",
-
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE
     )
     @ResponseBody
@@ -112,7 +108,6 @@ public class StandardController {
       throws IOException {
         FileSystemResource rule = this.downloadFile("validation_json_t16_salience"); // WS
 
-        // Mala práctica, just for test
         String jsonString = """
               {
                   "firstName": "Felipe",
