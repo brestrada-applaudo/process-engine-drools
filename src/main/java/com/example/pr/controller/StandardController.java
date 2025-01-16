@@ -106,13 +106,27 @@ public class StandardController {
     @GetMapping("/flow/{flowId}/step/{stepId}/action/rest")
     public String executeActionJsonWithFilterViaRest(@PathVariable int flowId, @PathVariable int stepId)
       throws IOException {
-        FileSystemResource rule = this.downloadFile("validation_json_t16_salience"); // WS
+        FileSystemResource rule = this.downloadFile("validation_json_t13_salience"); // WS
 
         String jsonString = """
               {
-                  "firstName": "Felipe",
-                  "lastName": "Estrada",
-                  "age": 30
+                  "customsId": "01 - San Bartolo",
+                  "examDate": "2024-11-27T00:00:00Z",
+                  "agentName": "Jose Hernandez QA",
+                  "agentCode": "000",
+                  "consigneeType": "COMPANY",
+                  "consigneeCompanyName": "Prueba 2",
+                  "consigneeCompanyNIT": "1231-231231-231-2",
+                  "consigneeCompanyCategory": "Prueba",
+                  "transportDocumentNumber": "123123.12323",
+                  "packageQuantity": 2,
+                  "netWeight": 23,
+                  "grossWeight": 2,
+                  "justification": "Prueba",
+                  "authorizedReviewerName": "Prueba",
+                  "authorizedReviewerDUI": "12312312-3",
+                  "email": "asdad@asd.acom",
+                  "phoneNumber": "1231-2312"
               }
           """;
 

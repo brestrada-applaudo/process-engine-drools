@@ -30,6 +30,7 @@ rule "Validate customsId from JSON in T13 Using Salience"
     @info(Esta regla se implementa dentro del trámite 13 para validar que el customsId no sea nulo)
     @type(logic)
     @message(Campos customsId no cumplen con el criterio)
+    @procedure(T13)
 salience 100
 when
     $jsonNode: JsonNode(!has("customsId"))
@@ -43,10 +44,25 @@ end
 rule "Validate consigneeType from JSON in T13 Using Salience"
     @info(Esta regla se implementa dentro del trámite 13 para validar que el consigneeType no sea nulo y sea un valor correcto)
     @type(logic)
-    @message(Campos consigneeType no cumplen con el criterio)
+    @message(Campos consigneeType es obligatorio)
+    @procedure(T13)
 salience 99
 when
-    $jsonNode: JsonNode(!has("consigneeType") && (get("consigneeType").textValue().equals("COMPANY") || get("firstName").textValue().equals("PERSON")))
+    $jsonNode: JsonNode(!has("consigneeType"))
+    not StepOneT13()
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+rule "Validate enum in consigneeType from JSON in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite 13 para validar que el consigneeType no sea nulo y sea un valor correcto)
+    @type(logic)
+    @message(Campos consigneeType no cumplen con el criterio)
+    @procedure(T13)
+salience 99
+when
+    $jsonNode: JsonNode(!get("consigneeType").textValue().equals("COMPANY") && !get("consigneeType").textValue().equals("PERSON"))
     not StepOneT13()
 then
     String message = (String) drools.getRule().getMetaData().get("message");
@@ -56,17 +72,18 @@ end
 rule "Validate consigneeType related fields from JSON in T13 Using Salience"
     @info(Esta regla se implementa dentro del trámite 13 para validar que los campos relacionados a consigneeType no sean nulos dependiendo el valor en consigneeType)
     @type(logic)
-    @message(Campos no cumplen con el criterio)
-salience 98
+    @message(Campos relacionados a consigneeType no cumplen con el criterio)
+    @procedure(T13)
+salience 97
 when
     $jsonNode: JsonNode(has("consigneeType"))
     not StepOneT13()
 then
     String message = (String) drools.getRule().getMetaData().get("message");
 
-    if($jsonNode.get("consigneeType").textValue().equals("COMPANY") && (!$jsonNode.has("consigneeCompanyCategory") || !$jsonNode.has("consigneePersonName") || !$jsonNode.has("consigneePersonDocumentType"))){
+    if($jsonNode.get("consigneeType").textValue().equals("COMPANY") && (!$jsonNode.has("consigneeCompanyName") || !$jsonNode.has("consigneeCompanyNIT") || !$jsonNode.has("consigneeCompanyCategory"))){
       throw new RuntimeException(message);
-    } else if(!$jsonNode.has("consigneePersonName") || !$jsonNode.has("consigneePersonDocumentType") || !$jsonNode.has("consigneePersonDUI")) {
+    } else if($jsonNode.get("consigneeType").textValue().equals("PERSON") && (!$jsonNode.has("consigneePersonName") || !$jsonNode.has("consigneePersonDocumentType") || !$jsonNode.has("consigneePersonDUI"))) {
       throw new RuntimeException(message);
     }
 end
@@ -75,9 +92,24 @@ rule "Validate packageQuantity from JSON in T13 Using Salience"
     @info(Esta regla se implementa dentro del trámite 13 para validar que el packageQuantity no sea nulo)
     @type(logic)
     @message(Campos packageQuantity no cumplen con el criterio)
-salience 97
+    @procedure(T13)
+salience 96
 when
-    $jsonNode: JsonNode(!has("packageQuantity") && get("packageQuantity").isInt())
+    $jsonNode: JsonNode(!has("packageQuantity"))
+    not StepOneT13()
+then
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
+end
+
+rule "Validate packageQuantity is int from JSON in T13 Using Salience"
+    @info(Esta regla se implementa dentro del trámite 13 para validar que el packageQuantity no sea nulo)
+    @type(logic)
+    @message(Campos packageQuantity debe ser un numero entero)
+    @procedure(T13)
+salience 95
+when
+    $jsonNode: JsonNode(has("packageQuantity") && !get("packageQuantity").isInt())
     not StepOneT13()
 then
     String message = (String) drools.getRule().getMetaData().get("message");
@@ -85,12 +117,12 @@ then
 end
 
 
-// Initial rule to create Person from JSON
 rule "Create StepOneT13 from JSON in T13 Using Salience"
     @info(Esta regla se implementa dentro del trámite 13 para crear el POJO StepOneT13)
     @type(logic)
     @message(StepOneT13 Creada con exito)
-salience 96
+    @procedure(T13)
+salience 94
 when
     $jsonNode: JsonNode()
     not StepOneT13()
@@ -98,14 +130,15 @@ then
     StepOneT13 step = new StepOneT13();
     step.setCustomsId($jsonNode.get("customsId").asText());
     step.setConsigneeType($jsonNode.get("consigneeType").asText());
-
-    step.setConsigneeCompanyName($jsonNode.get("consigneeCompanyName").asText());
-    step.setConsigneeCompanyNIT($jsonNode.get("consigneeCompanyNIT").asText());
-    step.setConsigneeCompanyCategory($jsonNode.get("consigneeCompanyCategory").asText());
-
-    step.setConsigneePersonName($jsonNode.get("consigneePersonName").asText());
-    step.setConsigneePersonDocumentType($jsonNode.get("consigneePersonDocumentType").asText());
-    step.setConsigneePersonDUI($jsonNode.get("consigneePersonDUI").asText());
+    if(step.getConsigneeType().equals("COMPANY")) {
+          step.setConsigneeCompanyName($jsonNode.get("consigneeCompanyName").asText());
+          step.setConsigneeCompanyNIT($jsonNode.get("consigneeCompanyNIT").asText());
+          step.setConsigneeCompanyCategory($jsonNode.get("consigneeCompanyCategory").asText());
+    } else {
+          step.setConsigneePersonName($jsonNode.get("consigneePersonName").asText());
+          step.setConsigneePersonDocumentType($jsonNode.get("consigneePersonDocumentType").asText());
+          step.setConsigneePersonDUI($jsonNode.get("consigneePersonDUI").asText());
+    }
 
     step.setPackageQuantity($jsonNode.get("packageQuantity").asInt());
 
@@ -116,26 +149,29 @@ end
 rule "Validate packageQuantity in T13 Using Salience"
     @info(Esta regla se implementa dentro del trámite 13 para validar que el packageQuantity sea mayor a 0)
     @type(logic)
-    @message(Campos packageQuantity or LastName no cumplen con el criterio)
+    @message(Campos packageQuantity no cumplen con el criterio)
+    @procedure(T13)
 salience 90
 when
     step: StepOneT13(
-        packageQuantity != null && packageQuantity > 0
+        packageQuantity == null || packageQuantity < 0
     )
 then
-    System.out.println("packageQuantity validation passed In T13");
+    String message = (String) drools.getRule().getMetaData().get("message");
+    throw new RuntimeException(message);
 end
 
 rule "Process Validated Step in T13 Using Salience"
     @info(Esta regla se implementa dentro del trámite 13 para validar que el )
     @type(logic)
     @message(Validation Success)
+    @procedure(T13)
 salience 70
 when
     $step: StepOneT13()
 then
     System.out.println("Step fully validated T13: " +
-        $step.getCustomsId() + " " +
+        $step.getCustomsId() + ", " +
         $step.getConsigneeType() + ", " +
         $step.getPackageQuantity());
 end
